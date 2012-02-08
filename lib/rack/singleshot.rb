@@ -22,7 +22,7 @@ module Rack
 
         write_response(status, headers, body)
       ensure
-        $stdout.close
+        @stdout.close
       end
 
       def read_request
@@ -40,18 +40,18 @@ module Rack
       end
 
       def write_response(status, headers, body)
-        $stdout.write(['HTTP/1.1', status, Rack::Utils::HTTP_STATUS_CODES[status.to_i]].join(' ') << CRLF)
+        @stdout.write(['HTTP/1.1', status, Rack::Utils::HTTP_STATUS_CODES[status.to_i]].join(' ') << CRLF)
 
         headers.each do |key, values|
           values.split("\n").each do |value|
-            $stdout.write([key, value].join(": ") << CRLF)
+            @stdout.write([key, value].join(": ") << CRLF)
           end
         end
 
-        $stdout.write(CRLF)
+        @stdout.write(CRLF)
 
         body.each do |chunk|
-          $stdout.write(chunk)
+          @stdout.write(chunk)
         end
       end
 
@@ -70,17 +70,21 @@ module Rack
         end
       end
 
+      require 'pp'
       def env_for(verb, path, version, headers, body)
         env = headers
 
-        uri = URI.parse(headers['SERVER_NAME']) + path
+        scheme = ['yes', 'on', '1'].include?(env['HTTPS']) ? 'https' : 'http'
+        host   = env['SERVER_NAME']
+
+        uri = URI.parse([scheme, '://', host, path].join)
 
         env.update 'REQUEST_METHOD' => verb
-        env.update 'SCRIPT_NAME'    => File.dirname(uri.path)
+        env.update 'SCRIPT_NAME'    => ''
         env.update 'PATH_INFO'      => uri.path
         env.update 'QUERY_STRING'   => uri.query || ''
         env.update 'SERVER_NAME'    => uri.host
-        env.update 'SERVER_PORT'    => uri.port
+        env.update 'SERVER_PORT'    => uri.port.to_s
 
         env.update 'rack.version'       => Rack::VERSION
         env.update 'rack.url_scheme'    => uri.scheme
@@ -88,16 +92,15 @@ module Rack
         env.update 'rack.errors'        => $stderr
         env.update 'rack.multithread'   => false
         env.update 'rack.multiprocess'  => false
+        env.update 'rack.run_once'      => true
 
         env
       end
 
       def header_key(key)
-        formatted_key = key.upcase.gsub('-', '_')
-        case key
-        when %w[CONTENT_TYPE CONTENT_LENGTH SERVER_NAME] then key
-        else "HTTP_#{key}"
-        end
+        key = key.upcase.gsub('-', '_')
+
+        %w[CONTENT_TYPE CONTENT_LENGTH SERVER_NAME].include?(key) ? key : "HTTP_#{key}"
       end
     end
 
