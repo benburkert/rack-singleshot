@@ -20,6 +20,7 @@ SUMMARY
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'rake'
+  s.add_development_dependency 'sinatra'
 
   s.files         = Dir["#{dir}/lib/**/*.rb"]
   s.require_paths = ["lib"]
