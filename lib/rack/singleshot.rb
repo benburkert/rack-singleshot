@@ -8,6 +8,10 @@ module Rack
       def self.run(app, options = {})
         stdin   = options.fetch(:stdin, $stdin)
         stdout  = options.fetch(:stdout, $stdout)
+
+        stdin.binmode = true
+        stdout.binmode = true
+
         new(app, stdin, stdout).run
       end
 
@@ -26,14 +30,18 @@ module Rack
       end
 
       def read_request
-        verb, path, version = @stdin.gets(CRLF).split(' ')
+        buffer, extra = drain(@stdin, CRLF * 2)
 
-        headers = parse_headers(@stdin.gets(CRLF * 2))
+        heading, buffer = buffer.split(CRLF, 2)
+
+        verb, path, version = heading.split(' ')
+
+        headers = parse_headers(buffer)
 
         if length = request_body_length(verb, headers)
-          body = StringIO.new(@stdin.read(length))
+          body = StringIO.new(extra + @stdin.read(length - extra.size))
         else
-          body = StringIO.new('')
+          body = StringIO.new(extra)
         end
 
         env_for(verb, path, version, headers, body)
@@ -70,7 +78,22 @@ module Rack
         end
       end
 
-      require 'pp'
+      def drain(socket, stop_at, chunksize = 1024)
+        buffer = ''
+
+        while(chunk = socket.readpartial(chunksize))
+          buffer << chunk
+
+          if buffer.include?(stop_at)
+            buffer, extra = buffer.split(stop_at, 2)
+
+            return buffer, extra
+          end
+        end
+      rescue EOFError
+        return buffer, ''
+      end
+
       def env_for(verb, path, version, headers, body)
         env = headers
 
