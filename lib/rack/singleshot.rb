@@ -9,8 +9,8 @@ module Rack
         stdin   = options.fetch(:stdin, $stdin)
         stdout  = options.fetch(:stdout, $stdout)
 
-        stdin.binmode = true
-        stdout.binmode = true
+        stdin.binmode = true  if stdin.respond_to?(:binmode=)
+        stdout.binmode = true if stdout.respond_to?(:binmode=)
 
         new(app, stdin, stdout).run
       end
@@ -98,7 +98,7 @@ module Rack
         env = headers
 
         scheme = ['yes', 'on', '1'].include?(env['HTTPS']) ? 'https' : 'http'
-        host   = env['SERVER_NAME']
+        host   = env['SERVER_NAME'] || env['HTTP_HOST']
 
         uri = URI.parse([scheme, '://', host, path].join)
 
