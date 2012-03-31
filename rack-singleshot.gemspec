@@ -22,6 +22,9 @@ SUMMARY
   s.add_development_dependency 'rake'
   s.add_development_dependency 'sinatra'
 
+  s.bindir        = 'bin'
+  s.executables   << 'singleshot'
+
   s.files         = Dir["#{dir}/lib/**/*.rb"]
   s.require_paths = ["lib"]
 

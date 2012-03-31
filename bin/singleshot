@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "rack/singleshot"
+ARGV.push("--server", "singleshot")
+Rack::Server.start
