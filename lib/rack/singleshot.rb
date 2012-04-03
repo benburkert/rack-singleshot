@@ -127,6 +127,6 @@ module Rack
       end
     end
 
-    register 'singleshot', SingleShot
+    register 'singleshot', 'Rack::Handler::SingleShot'
   end
 end
