@@ -7,6 +7,8 @@ describe Rack::Handler::SingleShot do
 
     @app = Rack::Lint.new(lambda {|env| [200, {'Content-Type' => 'text/plain'}, []] })
     @server = Rack::Handler::SingleShot.new(@app, @stdin, @stdout)
+
+    @server.stub(:exit)
   end
 
   it 'can handle a simple request' do
@@ -39,6 +41,8 @@ RESPONSE
 
       @app = Rack::Lint.new(App.new)
       @server = Rack::Handler::SingleShot.new(@app, @stdin, @stdout)
+
+      @server.stub(:exit)
     end
 
     it 'can handle a sinatra request' do

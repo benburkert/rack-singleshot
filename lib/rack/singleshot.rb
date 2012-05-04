@@ -27,6 +27,7 @@ module Rack
         write_response(status, headers, body)
       ensure
         @stdout.close
+        exit
       end
 
       def read_request
