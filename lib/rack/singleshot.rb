@@ -91,6 +91,8 @@ module Rack
             return buffer, extra
           end
         end
+        
+        return buffer, ''
       rescue EOFError
         return buffer, ''
       end
