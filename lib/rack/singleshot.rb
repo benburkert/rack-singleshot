@@ -1,4 +1,5 @@
 require 'rack'
+require 'http/parser'
 
 module Rack
   module Handler
@@ -31,23 +32,49 @@ module Rack
       end
 
       def read_request
-        buffer, extra = drain(@stdin, CRLF * 2)
+        verb, path, version, headers, body = parse_request(@stdin)
 
-        heading, buffer = buffer.split(CRLF, 2)
+        env_for(verb, path, version, headers, body)
+      end
 
-        verb, path, version = heading.split(' ')
-
-        headers = parse_headers(buffer)
-
-        if length = request_body_length(verb, headers)
-          body = StringIO.new(extra + @stdin.read(length - extra.size))
-        else
-          body = StringIO.new(extra)
-        end
+      def parse_request(socket, chunksize = 1024)
+        finished = false
+        body     = StringIO.new('')
+        parser   = Http::Parser.new
 
         body.set_encoding(Encoding::ASCII_8BIT) if body.respond_to?(:set_encoding)
 
-        env_for(verb, path, version, headers, body)
+        parser.on_message_complete = lambda { finished = true }
+        parser.on_body = lambda {|data| body << data }
+
+        while(chunk = socket.readpartial(chunksize))
+          parser << chunk
+
+          break if finished
+        end
+
+        return request_parts_from(parser) << body
+      rescue EOFError
+        return request_parts_from(parser) << body
+      end
+
+      def request_parts_from(parser)
+        [parser.http_method,
+         parser.request_path,
+         parser.http_version.join('.'),
+         parse_headers(parser.headers)]
+      end
+
+      def parse_headers(raw_headers)
+        raw_headers.inject({}) do |h, (key,value)|
+          h.update(header_key(key) => value)
+        end
+      end
+
+      def header_key(key)
+        key = key.upcase.gsub('-', '_')
+
+        %w[CONTENT_TYPE CONTENT_LENGTH SERVER_NAME].include?(key) ? key : "HTTP_#{key}"
       end
 
       def write_response(status, headers, body)
@@ -64,39 +91,6 @@ module Rack
         body.each do |chunk|
           @stdout.write(chunk)
         end
-      end
-
-      def parse_headers(raw_headers)
-        raw_headers.split(CRLF).inject({}) do |h, pair|
-          key, value = pair.split(": ")
-          h.update(header_key(key) => value)
-        end
-      end
-
-      def request_body_length(verb, headers)
-        return if %w[ POST PUT ].include?(verb.upcase)
-
-        if length = headers['CONTENT_LENGTH']
-          length.to_i
-        end
-      end
-
-      def drain(socket, stop_at, chunksize = 1024)
-        buffer = ''
-
-        while(chunk = socket.readpartial(chunksize))
-          buffer << chunk
-
-          if buffer.include?(stop_at)
-            buffer, extra = buffer.split(stop_at, 2)
-
-            return buffer, extra
-          end
-        end
-        
-        return buffer, ''
-      rescue EOFError
-        return buffer, ''
       end
 
       def env_for(verb, path, version, headers, body)
@@ -125,11 +119,6 @@ module Rack
         env
       end
 
-      def header_key(key)
-        key = key.upcase.gsub('-', '_')
-
-        %w[CONTENT_TYPE CONTENT_LENGTH SERVER_NAME].include?(key) ? key : "HTTP_#{key}"
-      end
     end
 
     register 'singleshot', 'Rack::Handler::SingleShot'
