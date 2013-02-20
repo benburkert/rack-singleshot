@@ -14,6 +14,7 @@ has finished. Sutable for running via inetd.
 SUMMARY
 
   s.add_dependency 'rack'
+  s.add_dependency 'http_parser.rb'
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'rake'
