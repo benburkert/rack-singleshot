@@ -1,7 +1,4 @@
 dir = File.dirname(__FILE__)
-$:.unshift dir + '/lib'
-
-require 'rack/singleshot'
 
 Gem::Specification.new do |s|
   s.name        = 'rack-singleshot'
