@@ -45,6 +45,8 @@ module Rack
           body = StringIO.new(extra)
         end
 
+        body.set_encoding(Encoding::ASCII_8BIT) if body.respond_to?(:set_encoding)
+
         env_for(verb, path, version, headers, body)
       end
 
