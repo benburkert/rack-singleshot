@@ -70,7 +70,7 @@ REQUEST
 
       @server.run
 
-      @out.read.should =~ /{"foo"=>"bar", "baz"=>"bang"}/
+      @out.read.should include('{"foo"=>"bar", "baz"=>"bang"}')
     end
   end
 end
