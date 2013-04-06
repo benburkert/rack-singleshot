@@ -33,6 +33,10 @@ RESPONSE
       get '/' do
         'response body'
       end
+
+      get '/params' do
+        params.inspect
+      end
     end
 
     before(:each) do
@@ -55,6 +59,18 @@ REQUEST
       @server.run
 
       @out.read.should =~ /response body\Z/
+    end
+
+    it 'supports query string parameters' do
+      @in << <<-REQUEST.gsub("\n", "\r\n")
+GET /params?foo=bar&baz=bang HTTP/1.1
+Server-Name: localhost
+
+REQUEST
+
+      @server.run
+
+      @out.read.should =~ /{"foo"=>"bar", "baz"=>"bang"}/
     end
   end
 end

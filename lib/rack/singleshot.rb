@@ -31,10 +31,11 @@ module Rack
         exit
       end
 
-      def read_request
-        verb, path, version, headers, body = parse_request(@stdin)
 
-        env_for(verb, path, version, headers, body)
+      def read_request
+        verb, path, query_string, version, headers, body = parse_request(@stdin)
+
+        env_for(verb, path, query_string, version, headers, body)
       end
 
       def parse_request(socket, chunksize = 1024)
@@ -61,6 +62,7 @@ module Rack
       def request_parts_from(parser)
         [parser.http_method,
          parser.request_path,
+         parser.query_string,
          parser.http_version.join('.'),
          parse_headers(parser.headers)]
       end
@@ -93,7 +95,7 @@ module Rack
         end
       end
 
-      def env_for(verb, path, version, headers, body)
+      def env_for(verb, path, query_string, version, headers, body)
         env = headers
 
         scheme = ['yes', 'on', '1'].include?(env['HTTPS']) ? 'https' : 'http'
@@ -104,7 +106,7 @@ module Rack
         env.update 'REQUEST_METHOD' => verb
         env.update 'SCRIPT_NAME'    => ''
         env.update 'PATH_INFO'      => uri.path
-        env.update 'QUERY_STRING'   => uri.query || ''
+        env.update 'QUERY_STRING'   => query_string
         env.update 'SERVER_NAME'    => uri.host
         env.update 'SERVER_PORT'    => uri.port.to_s
 
