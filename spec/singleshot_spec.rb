@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Rack::Handler::SingleShot do
+RSpec.describe Rack::Handler::SingleShot do
   before(:each) do
     @stdin, @in   = IO.pipe
     @out, @stdout = IO.pipe
@@ -8,7 +8,7 @@ describe Rack::Handler::SingleShot do
     @app = Rack::Lint.new(lambda {|env| [200, {'Content-Type' => 'text/plain'}, []] })
     @server = Rack::Handler::SingleShot.new(@app, @stdin, @stdout)
 
-    @server.stub(:exit)
+    allow(@server).to receive(:exit)
   end
 
   it 'can handle a simple request' do
@@ -20,7 +20,7 @@ REQUEST
 
     @server.run
 
-    @out.read.should == <<-RESPONSE.gsub("\n", "\r\n")
+    expect(@out.read).to eq <<-RESPONSE.gsub("\n", "\r\n")
 HTTP/1.1 200 OK
 Content-Type: text/plain
 
@@ -46,7 +46,7 @@ RESPONSE
       @app = Rack::Lint.new(App.new)
       @server = Rack::Handler::SingleShot.new(@app, @stdin, @stdout)
 
-      @server.stub(:exit)
+      allow(@server).to receive(:exit)
     end
 
     it 'can handle a sinatra request' do
@@ -58,7 +58,7 @@ REQUEST
 
       @server.run
 
-      @out.read.should =~ /response body\Z/
+      expect(@out.read).to match(/response body\Z/)
     end
 
     it 'supports query string parameters' do
@@ -70,7 +70,7 @@ REQUEST
 
       @server.run
 
-      @out.read.should include('{"foo"=>"bar", "baz"=>"bang"}')
+      expect(@out.read).to include('{"foo"=>"bar", "baz"=>"bang"}')
     end
   end
 end
