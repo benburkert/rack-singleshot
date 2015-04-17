@@ -54,6 +54,7 @@ module Rack
 
           break if finished
         end
+        body.rewind
 
         return request_parts_from(parser) << body
       rescue EOFError

@@ -37,6 +37,10 @@ RESPONSE
       get '/params' do
         params.inspect
       end
+
+      post '/' do
+        params.inspect
+      end
     end
 
     before(:each) do
@@ -71,6 +75,20 @@ REQUEST
       @server.run
 
       expect(@out.read).to include('{"foo"=>"bar", "baz"=>"bang"}')
+    end
+    it 'can handle a POST request' do
+      @in << <<-REQUEST.gsub("\n", "\r\n")
+POST / HTTP/1.1
+Server-Name: localhost
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 7
+
+foo=bar
+REQUEST
+
+      @server.run
+
+      expect(@out.read).to include('{"foo"=>"bar"}')
     end
   end
 end
