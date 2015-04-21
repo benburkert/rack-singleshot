@@ -1,5 +1,6 @@
 require 'rack'
 require 'http/parser'
+require 'uri'
 
 module Rack
   module Handler
@@ -53,6 +54,7 @@ module Rack
 
           break if finished
         end
+        body.rewind
 
         return request_parts_from(parser) << body
       rescue EOFError
@@ -60,9 +62,10 @@ module Rack
       end
 
       def request_parts_from(parser)
+        uri = URI.parse(parser.request_url)
         [parser.http_method,
-         parser.request_path,
-         parser.query_string,
+         uri.path,
+         uri.query || "",
          parser.http_version.join('.'),
          parse_headers(parser.headers)]
       end
